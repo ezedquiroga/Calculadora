@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculadora</title>
+</head>
+<body>
+    <h2>Calculadora de Cifras</h2>
+    <label for="num1">Número inicial 1:</label>
+    <input type="number" id="num1" value="2023"><br>
+
+    <label for="num2">Número inicial 2:</label>
+    <input type="number" id="num2" value="2024"><br>
+
+    <label for="num3">Número inicial 3:</label>
+    <input type="number" id="num3" value="2025"><br>
+
+    <label for="numCifras">Cantidad de cifras:</label>
+    <input type="number" id="numCifras" value="4"><br>
+
+    <label for="posicion">Posición deseada:</label>
+    <input type="number" id="posicion" value="2023202320232023"><br>
+
+    <button onclick="calcular()">Calcular</button>
+    
+    <p id="resultado"></p>
+
+    <script>
+        function calcular() {
+            // Se convierten los números iniciales, num de cifras y posicion a BigInt para manejar grandes valores
+            let nums = [
+                BigInt(document.getElementById("num1").value),
+                BigInt(document.getElementById("num2").value),
+                BigInt(document.getElementById("num3").value)
+            ];
+
+            let numCifras = BigInt(document.getElementById("numCifras").value);
+            let posicion = BigInt(document.getElementById("posicion").value);
+            
+            // Se verifica que la posición sea válida
+            if (posicion < 1n) {
+                document.getElementById("resultado").innerText = "La posición debe ser 1 o mayor.";
+                return;
+            }
+
+            // se define la variable modulus para limitar los números a las cifras deseadas
+            let modulus = BigInt(10) ** numCifras;
+
+            // Se inicializa el array 'lastThree' con los tres números iniciales
+            let lastThree = [...nums];
+
+            // Mapa para guardar patrones y su posición en la secuencia para detectar ciclos
+            let seenPatterns = new Map();
+
+            // Se inicia la posición actual en 3, ya que hay tres valores iniciales
+            let currentPos = 3n;
+
+            // Se limitan las iteraciones para evitar que se congele la pagina
+            const maxIterations = 10_000_000n;
+
+            // Se guarda el primer patrón (los tres primeros números) en el mapa
+            seenPatterns.set(lastThree.toString(), currentPos);
+
+            // Bucle que genera la secuencia hasta alcanzar la posición deseada o detectar un ciclo
+            while (currentPos < posicion) {
+                // Si se alcanzan las iteraciones máximas, muestra un mensaje de error
+                if (currentPos > maxIterations) {
+                    document.getElementById("resultado").innerHTML = "Error 🤷‍♂️ Alcanzaste el límite de iteraciones.<br>Proba una posición o cantidad de cifras menor.";
+                    return;
+                }
+
+                // Calcula el siguiente número en la secuencia (suma de los últimos tres valores, limitado por 'modulus')
+                let nextNum = (lastThree[0] + lastThree[1] + lastThree[2]) % modulus;
+
+                // Actualiza 'lastThree' eliminando el primer valor y agregando el nuevo al final
+                lastThree = [lastThree[1], lastThree[2], nextNum];
+                currentPos++;
+
+                // Convierte el nuevo patrón de 'lastThree' a string para almacenarlo en el mapa
+                let pattern = lastThree.toString();
+
+                // Verifica si el patrón ya se ha visto (indicando un ciclo)
+                if (seenPatterns.has(pattern)) {
+                    // Si hay ciclo, obtiene el inicio del ciclo y su longitud
+                    let cycleStart = seenPatterns.get(pattern);
+                    let cycleLength = currentPos - cycleStart;
+
+                    // Calcula la posición dentro del ciclo correspondiente a la posición deseada
+                    let positionInCycle = (posicion - cycleStart) % cycleLength;
+                    let finalPosition = cycleStart + positionInCycle;
+
+                    // Obtiene el valor en la posición final del ciclo desde el mapa
+                    let resultadoCifras = Array.from(seenPatterns)[Number(finalPosition - 1n)][0];
+
+                    // Divide el valor en caso de que haya comas y toma el último segmento
+                    let partes = resultadoCifras.split(',');
+                    let ultimoValor = partes[partes.length - 1];
+
+                    // Si hay más de una coma, concatena las partes para obtener el número correcto
+                    if (partes.length > 1) {
+                        ultimoValor = partes[partes.length - 2] + ultimoValor;
+                    }
+
+                    // Muestra las últimas cifras en la posición deseada
+                    document.getElementById("resultado").innerText = `Las últimas ${numCifras} cifras en la posición ${posicion} son: ${ultimoValor.slice(-Number(numCifras))}`;
+                    return;
+                } else {
+                    // Si no se ha detectado un ciclo, guarda el patrón actual en el mapa
+                    seenPatterns.set(pattern, currentPos);
+                }
+            }
+
+            // Si no se detecta ciclo y se alcanza la posición deseada, muestra el resultado final
+            document.getElementById("resultado").innerText = `Las últimas ${numCifras} cifras en la posición ${posicion} son: ${lastThree[2].toString().slice(-Number(numCifras))}`;
+        }
+    </script>
+</body>
+</html>
